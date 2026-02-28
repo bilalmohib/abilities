@@ -3,21 +3,39 @@ from src.agent.capability import MatchingCapability
 from src.main import AgentWorker
 from src.agent.capability_worker import CapabilityWorker
 
-class AjsdiosajodasCapability(MatchingCapability):
     worker: AgentWorker = None
-    capability_worker: CapabilityWorker = None
-    
+
+class MeetingModeCapability(MatchingCapability):
+    """
+    Silent background Meeting Mode.
+    Explicit trigger only.
+    """
+
+    unique_name: str = "meeting_mode_research"
+    matching_hotwords: list[str] = [
+        "start meeting mode",
+        "begin meeting mode",
+    ]
+
+    worker: AgentWorker | None = None
+    capability_worker: CapabilityWorker | None = None
+
     # Do not change following tag of register capability
     #{{register capability}}
 
-    async def first_function(self):
-
-        # Resume the normal workflow
-        self.capability_worker.resume_normal_flow()
+    async def meeting_daemon(self):
+        """
+        Background daemon.
+        Must stay alive.
+        Must stay silent.
+        """
+        while True:
+            await self.worker.session_tasks.sleep(1)
 
     def call(self, worker: AgentWorker):
-        # Initialize the worker and capability worker
         self.worker = worker
-        self.capability_worker = CapabilityWorker(self.worker)
+        self.capability_worker = CapabilityWorker(worker)
 
-        self.worker.session_tasks.create(self.first_function())
+        # IMPORTANT:
+        # Start daemon and DO NOT resume normal flow
+        self.worker.session_tasks.create(self.meeting_daemon())
